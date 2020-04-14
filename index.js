@@ -1,9 +1,8 @@
-const program = require("commander");
 const fs = require("fs");
 const request = require('request');
-const image2base64 = require('image-to-base64');
+// const image2base64 = require('image-to-base64');
 var https = require('https');
-//var urlToImage = require('url-to-image');
+// var urlToImage = require('url-to-image');
 const sendEmail = require("./mailer");
 const textractScan = require("./textractDoc");
 const passportScan = require("./readPassport");
