@@ -89,7 +89,13 @@ app.get('/webhook', (req, res) => {
       // will be added to the body of our request to the Send API
   var text = received_message.text.trim().toLowerCase();
    if  (text.includes("hi")) {
+    myD();
+
     var text2 = received_message.text.trim().toLowerCase();
+    response = {"text": `Hi there, please use the menu or say "Start Over".`}
+  }
+  else if  (text.includes("pi")) {
+    myP();
     response = {"text": `Hi there, please use the menu or say "Start Over".`}
   }
    else {
@@ -104,16 +110,15 @@ app.get('/webhook', (req, res) => {
     let att = webhook_event.message.attachments[0].payload.url;
    // console.log(att);
   // convertImage(att);
-
-  filePath = './sample.jpg';
+  filePath = 'sample.jpg';
 var file = fs.createWriteStream(filePath);
-var request = https.get(att, function(response) {
+var request = https.get(att, async function(response) {
     response.pipe(file);
+    file.on('close', function (err) {
+      //  console.log('Stream has been destroyed and file has been closed');
+    })
     console.log('1');
 });
-
-
-
 
 
 // request = get(att, function(response) {
@@ -121,45 +126,39 @@ var request = https.get(att, function(response) {
 //     });
 // console.log(file);
 
-
-
     response = {"text": "Sorry, we don't handle attachment at this moment. Please say start over for the main menu."}
     } 
-    
     // Send the response message
-    callSendAPI(sender_psid, response);    
+    callSendAPI(sender_psid, response);
   }
   
-  function convertImage(path){
-    image2base64(path) 
-    .then(
-        (response) => {
-            //console.log(response);
-            //console.log(response);
-        }
-    )
-    .catch(
-        (error) => {
-            console.log(error);
-        }
-    )
-  }
+//   function convertImage(path){
+//     image2base64(path) 
+//     .then(
+//         (response) => {
+//             //console.log(response);
+//             //console.log(response);
+//         }
+//     )
+//     .catch(
+//         (error) => {
+//             console.log(error);
+//         }
+//     )
+//   }
 
 
-  async function myF() {
+  async function myD() {
     var data = fs.readFileSync('sample.jpg');
-    //dae = convertImage('sample.jpg');
-    console.log('data');
-    console.log('data');
-    console.log('data');
-    console.log('data');
-    //let pp = 'ttt.jpg';
     const results = await textractScan(data);
     console.log(results);
 };
-myF();
-
-
+    
+async function myP() {
+    var data = fs.readFileSync('sample.jpg');
+    const results = await passportScan(data);
+    console.log(results);
+};
 
   // Handles messaging_postbacks events
   function handlePostback(sender_psid, received_postback) {
