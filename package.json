@@ -31,6 +31,7 @@
     "express": "latest",
     "fs": "latest",
     "https": "^1.0.0",
+    "image-to-base64": "^2.0.1",
     "lodash": "latest",
     "nodemailer": "^6.4.6",
     "request": "^2.88.2"

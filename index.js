@@ -1,15 +1,15 @@
 const fs = require("fs");
 const request = require('request');
-// const image2base64 = require('image-to-base64');
+//const image2base64 = require('image-to-base64');
 var https = require('https');
 // var urlToImage = require('url-to-image');
 const sendEmail = require("./mailer");
 const textractScan = require("./textractDoc");
 const passportScan = require("./readPassport");
+const wireCode = require("./wireCode");
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express().use(bodyParser.json());
-
 
 // Webhook Endpoint For Facebook Messenger //
 app.post('/webhook', (req, res) => {  
@@ -107,11 +107,12 @@ app.get('/webhook', (req, res) => {
   }else if (received_message.attachments) {
       // Get the URL of the message attachment
     //  let attachment_url = received_message.attachments[0].payload.url;
-    let att = webhook_event.message.attachments[0].payload.url;
+    // global.h
+    att = webhook_event.message.attachments[0].payload.url;
    // console.log(att);
   // convertImage(att);
   filePath = 'sample.jpg';
-var file = fs.createWriteStream(filePath);
+file = fs.createWriteStream(filePath);
 var request = https.get(att, async function(response) {
     response.pipe(file);
     file.on('close', function (err) {
@@ -149,15 +150,51 @@ var request = https.get(att, async function(response) {
 
 
   async function myD() {
-    var data = fs.readFileSync('sample.jpg');
+    var data = fs.readFileSync('9.jpg');
     const results = await textractScan(data);
     console.log(results);
 };
     
 async function myP() {
-    var data = fs.readFileSync('sample.jpg');
+    var data = fs.readFileSync('ttt.jpg');
     const results = await passportScan(data);
     console.log(results);
+};
+
+async function myC() {
+    var data = fs.readFileSync('sample.jpg');
+    results = await wireCode(data);
+    console.log(results.generated_webpage_html);
+    console.log(results.generated_webpage_css);
+    
+
+
+
+    
+//     var r = JSON.stringify(results);
+// console.log(r);
+
+
+fs.writeFile("output.html", results.generated_webpage_html, 'utf8', function (err) {
+    if (err) {
+        console.log("An error occured while writing JSON Object to File.");
+        return console.log(err);
+    }
+ 
+    console.log("HTML file has been saved."); 
+});
+
+fs.writeFile("autocodeai-form.css", results.generated_webpage_css, 'utf8', function (err) {
+    if (err) {
+        console.log("An error occured while writing JSON Object to File.");
+        return console.log(err);
+    }
+ 
+    console.log("HTML file has been saved."); 
+});
+
+
+    //console.log(results);
 };
 
   // Handles messaging_postbacks events
