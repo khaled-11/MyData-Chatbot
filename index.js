@@ -14,11 +14,49 @@ const wireCode = require("./wireCode");
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express().use(bodyParser.json());
+const PDFDocument = require('pdfkit');
 AWS.config.update({region: 'us-east-1'});
 
 // Start
 var ddb = new AWS.DynamoDB();
+var polly = new AWS.Polly();
 
+// Create an Polly client
+const Polly = new AWS.Polly({
+  signatureVersion: 'v4',
+  region: 'us-east-1'
+})
+
+let params = {
+  'Text': 'Hi, my name is @anaptfox.',
+  'OutputFormat': 'mp3',
+  'VoiceId': 'Kimberly'
+}
+
+Polly.synthesizeSpeech(params, (err, data) => {
+  if (err) {
+      console.log(err.code)
+  } else if (data) {
+      if (data.AudioStream instanceof Buffer) {
+          fs.writeFile("./speech.mp3", data.AudioStream, function(err) {
+              if (err) {
+                  return console.log(err)
+              }
+              console.log("The file was saved!")
+          })
+      }
+  }
+})
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////
+//// Tables /////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
 var params = {
   AttributeDefinitions: [
     {
@@ -56,30 +94,6 @@ ddb.createTable(params, function(err, data) {
     console.log("Error", err);
   } else {
     console.log("Table Created", data);
-  }
-});
-
-
-ddb.listTables({Limit: 10}, function(err, data) {
-  if (err) {
-    console.log("Error", err.code);
-  } else {
-    console.log("Table names are ", data.TableNames);
-  }
-});
-
-var params = {
-  TableName: process.argv[1]
-};
-
-// Call DynamoDB to delete the specified table
-ddb.deleteTable(params, function(err, data) {
-  if (err && err.code === 'ResourceNotFoundException') {
-    console.log("Error: Table not found");
-  } else if (err && err.code === 'ResourceInUseException') {
-    console.log("Error: Table in use");
-  } else {
-    console.log("Success", data);
   }
 });
 
