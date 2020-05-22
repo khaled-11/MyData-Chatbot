@@ -1,8 +1,12 @@
 const fs = require("fs");
+var AWS = require('aws-sdk');
 const request = require('request');
 //const image2base64 = require('image-to-base64');
 var https = require('https');
 // var urlToImage = require('url-to-image');
+var session = require('express-session');
+var md5 = require('md5');
+var CryptoJS = require("crypto-js");
 const sendEmail = require("./mailer");
 const textractScan = require("./textractDoc");
 const passportScan = require("./readPassport");
@@ -10,8 +14,76 @@ const wireCode = require("./wireCode");
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express().use(bodyParser.json());
+AWS.config.update({region: 'us-east-1'});
 
 // Start
+var ddb = new AWS.DynamoDB();
+
+var params = {
+  AttributeDefinitions: [
+    {
+      AttributeName: 'CUSTOMER_ID',
+      AttributeType: 'N'
+    },
+    {
+      AttributeName: 'CUSTOMER_NAME',
+      AttributeType: 'S'
+    }
+  ],
+  KeySchema: [
+    {
+      AttributeName: 'CUSTOMER_ID',
+      KeyType: 'HASH'
+    },
+    {
+      AttributeName: 'CUSTOMER_NAME',
+      KeyType: 'RANGE'
+    }
+  ],
+  ProvisionedThroughput: {
+    ReadCapacityUnits: 1,
+    WriteCapacityUnits: 1
+  },
+  TableName: 'CUSTOMER_LIST',
+  StreamSpecification: {
+    StreamEnabled: false
+  }
+};
+
+// Call DynamoDB to create the table
+ddb.createTable(params, function(err, data) {
+  if (err) {
+    console.log("Error", err);
+  } else {
+    console.log("Table Created", data);
+  }
+});
+
+
+ddb.listTables({Limit: 10}, function(err, data) {
+  if (err) {
+    console.log("Error", err.code);
+  } else {
+    console.log("Table names are ", data.TableNames);
+  }
+});
+
+var params = {
+  TableName: process.argv[1]
+};
+
+// Call DynamoDB to delete the specified table
+ddb.deleteTable(params, function(err, data) {
+  if (err && err.code === 'ResourceNotFoundException') {
+    console.log("Error: Table not found");
+  } else if (err && err.code === 'ResourceInUseException') {
+    console.log("Error: Table in use");
+  } else {
+    console.log("Success", data);
+  }
+});
+
+
 
 // Webhook Endpoint For Facebook Messenger //
 app.post('/webhook', (req, res) => {  
@@ -55,9 +127,6 @@ app.post('/webhook', (req, res) => {
 
   // Adds support for GET requests to our webhook
 app.get('/webhook', (req, res) => {
-
-    // Your verify token. Should be a random string.
-    let VERIFY_TOKEN = "adsfhg"
       
     // Parse the query params
     let mode = req.query['hub.mode'];
@@ -68,7 +137,7 @@ app.get('/webhook', (req, res) => {
     if (mode && token) {
     
       // Checks the mode and token sent is correct
-      if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      if (mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
         
         // Responds with the challenge token from the request
         console.log('WEBHOOK_VERIFIED');
