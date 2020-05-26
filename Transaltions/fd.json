@@ -1,0 +1,15 @@
+curl -X POST -H "Content-Type: application/json" -d "greeting":[{
+    "locale":"default",
+    "text":"Welcome Khaled!! I am your Smart Helper from Talk to Me!! We are so Excited to show you our new Amazing Features. We are here to Help and Save your Time!!"
+    }],"https://graph.facebook.com/v2.6/me/messenger_profile?access_token=EAADXL3rUZAdsBAPnNERr9vpJP359ZC4rZAtqrBkzUYw2AO7Ttjl55ybolbC7FJLzyiwQj4II9wE6I1U0P3LtQD76LbohPZCZBsLeHOReqPyt1junk4m3WIZB2hLsZBrMBSwwrzMHKnjxOOG6WaxQCd93I6dlAnmwOLXlZB86C8mWuwZDZD"
+
+
+
+
+
+
+
+    curl -X POST -H "Content-Type: application/json" -d '{
+            "greeting":[{"locale":"default","text":"Welcome {{user_first_name}}!! I am your Smart Helper from Talk to Me!! We are so Excited to show you our new Amazing Features. We are here to Help and Save your Time!!"},{"locale":"ar_AR","text":"أهلا بك {{user_first_name}}, انا مساعدك الذكي من Talk to Me. نحن متحمسين لنريك خدماتنا الجديده والمميزه. نحن هنا لمساعدتك وتوفير وقتك!"},{"locale":"zh_CN","text":"hkjhkjhkhyuiyiumn"}]
+        }' "https://graph.facebook.com/v2.6/me/messenger_profile?access_token=EAADXL3rUZAdsBAPnNERr9vpJP359ZC4rZAtqrBkzUYw2AO7Ttjl55ybolbC7FJLzyiwQj4II9wE6I1U0P3LtQD76LbohPZCZBsLeHOReqPyt1junk4m3WIZB2hLsZBrMBSwwrzMHKnjxOOG6WaxQCd93I6dlAnmwOLXlZB86C8mWuwZDZD"
+     

@@ -1,0 +1,9 @@
+{
+	"menu": {
+		"welcome": "Hi {{fName}}!, I am your smart helper from Talk to Me. I can Extract Text from Images, Generate Audio from Text, Provide Summary, and more!! In addition, I can save all of your documents if you need it again in the Future! Also, I can connect you to a friend who can extract helpful data from an ID or a Form Image, and can save it with an easy future retrieval! We support many languages in order to provide the best experience for our users. To start, please choose a service from below:",
+		"image_to_text": "Image to Text",
+		"text_to_audio": "Text to Audio",
+		"summary": "Provide Summary",
+		"extractor": "Data Extractor"
+	}
+}

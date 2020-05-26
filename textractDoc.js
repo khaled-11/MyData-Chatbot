@@ -1,112 +1,112 @@
-const _ = require("lodash");
-const aws = require("aws-sdk");
-const config = require("./config");
+// const _ = require("lodash");
+// const aws = require("aws-sdk");
+// const config = require("./config");
 
-aws.config.update({
-  accessKeyId: config.awsAccesskeyID,
-  secretAccessKey: config.awsSecretAccessKey,
-  region: config.awsRegion
-});
+// aws.config.update({
+//   accessKeyId: config.awsAccesskeyID,
+//   secretAccessKey: config.awsSecretAccessKey,
+//   region: config.awsRegion
+// });
 
-const textract = new aws.Textract();
+// const textract = new aws.Textract();
 
-const getText = (result, blocksMap) => {
-  let text = "";
+// const getText = (result, blocksMap) => {
+//   let text = "";
 
-  if (_.has(result, "Relationships")) {
-    result.Relationships.forEach(relationship => {
-      if (relationship.Type === "CHILD") {
-        relationship.Ids.forEach(childId => {
-          const word = blocksMap[childId];
-          if (word.BlockType === "WORD") {
-            text += `${word.Text} `;
-          }
-          if (word.BlockType === "SELECTION_ELEMENT") {
-            if (word.SelectionStatus === "SELECTED") {
-              text += `X `;
-            }
-          }
-        });
-      }
-    });
-  }
+//   if (_.has(result, "Relationships")) {
+//     result.Relationships.forEach(relationship => {
+//       if (relationship.Type === "CHILD") {
+//         relationship.Ids.forEach(childId => {
+//           const word = blocksMap[childId];
+//           if (word.BlockType === "WORD") {
+//             text += `${word.Text} `;
+//           }
+//           if (word.BlockType === "SELECTION_ELEMENT") {
+//             if (word.SelectionStatus === "SELECTED") {
+//               text += `X `;
+//             }
+//           }
+//         });
+//       }
+//     });
+//   }
 
-  return text.trim();
-};
+//   return text.trim();
+// };
 
-const findValueBlock = (keyBlock, valueMap) => {
-  let valueBlock;
-  keyBlock.Relationships.forEach(relationship => {
-    if (relationship.Type === "VALUE") {
-      relationship.Ids.every(valueId => {
-        if (_.has(valueMap, valueId)) {
-          valueBlock = valueMap[valueId];
-          return false;
-        }
-      });
-    }
-  });
+// const findValueBlock = (keyBlock, valueMap) => {
+//   let valueBlock;
+//   keyBlock.Relationships.forEach(relationship => {
+//     if (relationship.Type === "VALUE") {
+//       relationship.Ids.every(valueId => {
+//         if (_.has(valueMap, valueId)) {
+//           valueBlock = valueMap[valueId];
+//           return false;
+//         }
+//       });
+//     }
+//   });
 
-  return valueBlock;
-};
+//   return valueBlock;
+// };
 
-const getKeyValueRelationship = (keyMap, valueMap, blockMap) => {
-  const keyValues = {};
+// const getKeyValueRelationship = (keyMap, valueMap, blockMap) => {
+//   const keyValues = {};
 
-  const keyMapValues = _.values(keyMap);
+//   const keyMapValues = _.values(keyMap);
 
-  keyMapValues.forEach(keyMapValue => {
-    const valueBlock = findValueBlock(keyMapValue, valueMap);
-    const key = getText(keyMapValue, blockMap);
-    const value = getText(valueBlock, blockMap);
-    keyValues[key] = value;
-  });
+//   keyMapValues.forEach(keyMapValue => {
+//     const valueBlock = findValueBlock(keyMapValue, valueMap);
+//     const key = getText(keyMapValue, blockMap);
+//     const value = getText(valueBlock, blockMap);
+//     keyValues[key] = value;
+//   });
 
-  return keyValues;
-};
+//   return keyValues;
+// };
 
-const getKeyValueMap = blocks => {
-  const keyMap = {};
-  const valueMap = {};
-  const blockMap = {};
+// const getKeyValueMap = blocks => {
+//   const keyMap = {};
+//   const valueMap = {};
+//   const blockMap = {};
 
-  let blockId;
-  blocks.forEach(block => {
-    blockId = block.Id;
-    blockMap[blockId] = block;
+//   let blockId;
+//   blocks.forEach(block => {
+//     blockId = block.Id;
+//     blockMap[blockId] = block;
 
-    if (block.BlockType === "KEY_VALUE_SET") {
-      if (_.includes(block.EntityTypes, "KEY")) {
-        keyMap[blockId] = block;
-      } else {
-        valueMap[blockId] = block;
-      }
-    }
-  });
+//     if (block.BlockType === "KEY_VALUE_SET") {
+//       if (_.includes(block.EntityTypes, "KEY")) {
+//         keyMap[blockId] = block;
+//       } else {
+//         valueMap[blockId] = block;
+//       }
+//     }
+//   });
 
-  return { keyMap, valueMap, blockMap };
-};
+//   return { keyMap, valueMap, blockMap };
+// };
 
-module.exports = async buffer => {
-  const params = {
-    Document: {
-      /* Convert to base-64 */
-      Bytes: buffer
-    },
-    FeatureTypes: ["FORMS"]
-  };
+// module.exports = async buffer => {
+//   const params = {
+//     Document: {
+//       /* Convert to base-64 */
+//       Bytes: buffer
+//     },
+//     FeatureTypes: ["FORMS"]
+//   };
 
-  const request = textract.analyzeDocument(params);
-  const data = await request.promise();
-  if (data && data.Blocks) {
-    const { keyMap, valueMap, blockMap } = getKeyValueMap(data.Blocks);
-    const keyValues = getKeyValueRelationship(keyMap, valueMap, blockMap);
-    return keyValues;
-  }
+//   const request = textract.analyzeDocument(params);
+//   const data = await request.promise();
+//   if (data && data.Blocks) {
+//     const { keyMap, valueMap, blockMap } = getKeyValueMap(data.Blocks);
+//     const keyValues = getKeyValueRelationship(keyMap, valueMap, blockMap);
+//     return keyValues;
+//   }
 
-  // in case no blocks are found return undefined
-  return undefined;
-};
+//   // in case no blocks are found return undefined
+//   return undefined;
+// };
 
 
 
@@ -115,36 +115,36 @@ module.exports = async buffer => {
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-// const _ = require("lodash");
-// const aws = require("aws-sdk");
-// const config = require("./config");
+const _ = require("lodash");
+const aws = require("aws-sdk");
+const config = require("./config");
 
-// aws.config.update({
+aws.config.update({
 
-//   region: config.awsRegion
-// });
+  region: config.awsRegion
+});
 
-// const textract = new aws.Textract();
+const textract = new aws.Textract();
 
-// module.exports = async buffer => {
-//   const params = {
-//     Document: {
-//       /* required */
-//       Bytes: buffer
-//     },
-//     FeatureTypes: ["FORMS"]
-//   };
+module.exports = async buffer => {
+  const params = {
+    Document: {
+      /* required */
+      Bytes: buffer
+    },
+    FeatureTypes: ["FORMS"]
+  };
 
-//   const request = textract.analyzeDocument(params);
-//   const data = await request.promise();
+  const request = textract.analyzeDocument(params);
+  const data = await request.promise();
 
-//   if (data) {
-//     return data;
-//   }
+  if (data) {
+    return data;
+  }
 
-//   // in case no blocks are found return undefined
-//   return undefined;
-// };
+  // in case no blocks are found return undefined
+  return undefined;
+};
 
 
 

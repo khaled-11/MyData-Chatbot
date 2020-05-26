@@ -1,21 +1,103 @@
 const fs = require("fs");
 var AWS = require('aws-sdk');
-const request = require('request');
 //const image2base64 = require('image-to-base64');
 var https = require('https');
 // var urlToImage = require('url-to-image');
 var session = require('express-session');
 var md5 = require('md5');
 var CryptoJS = require("crypto-js");
+const path = require("path");
 const sendEmail = require("./mailer");
+const rekognition = require("./Rekognition");
 const textractScan = require("./textractDoc");
 const passportScan = require("./readPassport");
 const wireCode = require("./wireCode");
+const getData = require("./get_data");
+const putData = require("./put_data");
+const exists = require("./check_data");
 const express = require('express');
 const bodyParser = require('body-parser');
+const pdf = require('pdf-parse');
 const app = express().use(bodyParser.json());
 const PDFDocument = require('pdfkit');
 AWS.config.update({region: 'us-east-1'});
+var Request = require("request");
+i18n = require("./i18n.js");
+var rp = require('request-promise');
+
+var users = [];
+
+
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
+app.set("view engine", "ejs");
+
+/*
+////////////////////////////////////////////////////////////
+///// Summary + Polly + Reading PDF from User
+///////////////////////////////////////////////////////////
+let dataBuffer = fs.readFileSync('./sample.pdf');
+pdf(dataBuffer).then(fsunction(data) {
+  let A = data;
+  console.log(A);
+  fs.writeFile('./views/sample.ejs', A, (err) => {
+    if (err) throw err;
+});});
+
+
+var req = unirest("GET", "https://meaningcloud-summarization-v1.p.rapidapi.com/summarization-1.0");
+app.get('/views', function(request, response) {
+	response.render("sample");
+});
+req.query({
+  "url": "http://76e0dcd8.ngrok.io/views",
+  	"sentences": "10"
+});
+req.headers({
+	"x-rapidapi-host": "meaningcloud-summarization-v1.p.rapidapi.com",
+	"x-rapidapi-key": "1390cea5damshd570a5f82509daep1cb503jsncbc3c74853d5",
+	"accept": "text/json",
+	"useQueryString": true
+});
+
+req.end(function (res) {
+  if (res.error) throw new Error(res.error);
+  console.log(res.body);
+  fs.writeFile("./sample.txt", res.body.summary, function(err) {
+    if (err) {
+        return console.log(err)
+    }
+    console.log("The file was saved!")
+})});
+
+var polly = new AWS.Polly();
+var data = fs.readFileSync('sample.txt', 'utf8');
+// Create an Polly client
+const Polly = new AWS.Polly({
+  signatureVersion: 'v4',
+  region: 'us-east-1'
+})
+let params = {
+  'Text': data,
+  'OutputFormat': 'mp3',
+  'VoiceId': 'Kimberly'
+}
+Polly.synthesizeSpeech(params, (err, data) => {
+  if (err) {
+      console.log(err.code)
+  } else if (data) {
+      if (data.AudioStream instanceof Buffer) {
+          fs.writeFile("./speech.mp3", data.AudioStream, function(err) {
+              if (err) {
+                  return console.log(err)
+              }
+              console.log("The file was saved!")
+  })}}})
+
+*/
+
+
+/*
 
 // Start
 var ddb = new AWS.DynamoDB();
@@ -27,13 +109,13 @@ const Polly = new AWS.Polly({
   region: 'us-east-1'
 })
 
-let params = {
+let params2 = {
   'Text': 'Hi, my name is @anaptfox.',
   'OutputFormat': 'mp3',
   'VoiceId': 'Kimberly'
 }
 
-Polly.synthesizeSpeech(params, (err, data) => {
+Polly.synthesizeSpeech(params2, (err, data) => {
   if (err) {
       console.log(err.code)
   } else if (data) {
@@ -50,53 +132,46 @@ Polly.synthesizeSpeech(params, (err, data) => {
 
 
 
+*/
 
 
 
-
-/////////////////////////////////////////////////////////////
-//// Tables /////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+////          User Table keyed on USER_PSID. Data:        ////
+////      First Name, Last Name, User States trackers     ////
+//// Objects for personal data, Objects for files & Audio ////
+//////////////////////////////////////////////////////////////
+var ddb = new AWS.DynamoDB();
 var params = {
   AttributeDefinitions: [
     {
-      AttributeName: 'CUSTOMER_ID',
-      AttributeType: 'N'
-    },
-    {
-      AttributeName: 'CUSTOMER_NAME',
+      AttributeName: 'PSID',
       AttributeType: 'S'
     }
   ],
   KeySchema: [
     {
-      AttributeName: 'CUSTOMER_ID',
+      AttributeName: 'PSID',
       KeyType: 'HASH'
-    },
-    {
-      AttributeName: 'CUSTOMER_NAME',
-      KeyType: 'RANGE'
     }
   ],
   ProvisionedThroughput: {
     ReadCapacityUnits: 1,
     WriteCapacityUnits: 1
   },
-  TableName: 'CUSTOMER_LIST',
+  TableName: 'CLIENTS',
   StreamSpecification: {
     StreamEnabled: false
   }
 };
-
 // Call DynamoDB to create the table
 ddb.createTable(params, function(err, data) {
   if (err) {
-    console.log("Error", err);
+    console.log("Table Exists!");
   } else {
-    console.log("Table Created", data);
+    console.log("Table Created!");
   }
 });
-
 
 
 // Webhook Endpoint For Facebook Messenger //
@@ -110,20 +185,17 @@ app.post('/webhook', (req, res) => {
   
         // Gets the body of the webhook event
         let webhook_event = entry.messaging[0];
-       // console.log(webhook_event);
-      
-      
+
         // Get the sender PSID
         let sender_psid = webhook_event.sender.id;
-        console.log('Sender PSID: ' + sender_psid);
-        //callUserInfo(sender_psid);
+        //console.log(sender_psid);
     
         // Check if the event is a message or postback and
         // pass the event to the appropriate handler function
-        if (webhook_event.message) {
+        if (webhook_event.message && !webhook_event.message.quick_reply) {
           handleMessage(sender_psid, webhook_event);        
-        } else if (webhook_event.postback) {
-          handlePostback(sender_psid, webhook_event.postback);
+        } else if (webhook_event.postback || (webhook_event.message && webhook_event.message.quick_reply)) {
+          handlePostback(sender_psid, webhook_event);
         } 
       });
       // Returns a '200 OK' response to all requests
@@ -134,10 +206,6 @@ app.post('/webhook', (req, res) => {
     }
   
   });
-
-
-
-
 
   // Adds support for GET requests to our webhook
 app.get('/webhook', (req, res) => {
@@ -164,6 +232,185 @@ app.get('/webhook', (req, res) => {
     }
   });
 
+
+  // Asynchronously function to Rquest the user Info from Facebook.
+  async function requestData(sender_psid) {
+    var r;
+try{
+    var options = {
+      uri: `https://graph.facebook.com/${sender_psid}?fields=first_name,last_name,profile_pic,locale`,
+      qs: {
+          access_token: process.env.PAGE_ACCESS_TOKEN // -> uri + '?access_token=xxxxx%20xxxxx'
+      },
+      headers: {
+          'User-Agent': 'Request-Promise'
+      },
+      json: true // Automatically parses the JSON string in the response
+  };
+  r = await(rp(options));
+  }
+catch (e){
+console.log(e);
+}
+ return r;  
+}
+
+  // Handles messaging_postbacks events
+  async function handlePostback(sender_psid, webhook_event) {
+  // Sending "Sender Action" while waiting for the requested data!
+  response = null;
+  action = "typing_on";
+  callSendAPI(sender_psid, response, action);
+
+  // Variables for the payload, response, user info ,and trackers.
+  var response;
+  let payload;
+  let first_name;
+  let current_locale;
+  let general_state;
+
+  // Check if the user is already in database
+  const check = await exists(sender_psid);
+  if (check === true)
+  {
+    const data = await getData(sender_psid);
+    console.log(data.Item.first_name.S);
+    first_name = data.Item.first_name.S;
+  } else {
+    const t = await requestData(sender_psid);
+    console.log(t);
+    const m = await putData(t);
+    console.log(m);
+    const s = await getData(sender_psid);
+    console.log(data.Item.first_name.S);
+    first_name = data.Item.first_name.S;
+  }
+
+    if (webhook_event.postback){
+    payload = webhook_event.postback.payload;
+    } else {
+      payload = webhook_event.message.quick_reply.payload;
+    }
+
+
+    // This to check, using a local array, if this is the first visit for the user.
+    // If True, will get the data for every other step after Get_Started.
+    //   if (users.includes(sender_psid)){
+    //     data = await ret(sender_psid);
+    //     console.log(data);
+    //     first_name = await data.Item.first_name.S;
+    //     current_locale = await data.Item.Locale.S;
+    //     general_state = await data.Item.general_state.S;
+    // } else {
+    //   // Add PSID to the local array, and should go after to Get_Started
+    //   users[users.length] = sender_psid;
+
+    // }
+        // Adding the user data into DynamoDB table.
+        // Intializing tracking fields for the process.
+      // first_name = await data.Item.first_name.S;
+      // current_locale = await data.Item.Locale.S;
+      // general_state = await data.Item.general_state.S;
+
+
+    ///////////////////////////////////////////////////
+    ///                Starting Step                ///
+    ///   If this is the first entry for the user.  ///
+    ///////////////////////////////////////////////////
+    if (payload === 'GET_STARTED') {
+
+    /////////////// Geeting User Info /////////////////
+   //   console.log(first_name + "fdfd")
+    // Variables sed only in get_started response.
+
+          // Sending Welcome Message and Main Menu in current Locale.
+          //console.log (current_locale);
+          //i18n.setLocale(current_locale);
+          action = null;
+          response = {
+            "text": i18n.__("menu.welcome", {fName: "fsd"}), 
+            "quick_replies":[
+              {
+                "content_type":"text",
+                "title":i18n.__("menu.image_to_text"),
+                "payload":"IM"
+              },{
+                "content_type":"text",
+                "title":i18n.__("menu.text_to_audio"),
+                "payload":"THREE"
+              },{
+                "content_type":"text",
+                "title":i18n.__("menu.summary"),
+                "payload":"YY"
+              },{
+                "content_type":"text",
+                "title":i18n.__("menu.extractor"),
+                "payload":"TWO"
+              }
+            ]
+          }
+          callSendAPI(sender_psid, response, action);
+        // Calling the Main Menu (QUICK_REPLY) function.
+      
+
+
+    } else if (payload === 'MENU')
+    {
+      response = {
+        "text": i18n.__("menu.welcome", {fName: first_name}), 
+        "quick_replies":[
+          {
+            "type":"text",
+            "title":i18n.__("menu.image_to_text"),
+            "payload":"IM"
+          },{
+            "content_type":"text",
+            "title":i18n.__("menu.text_to_audio"),
+            "payload":"THREE"
+          },{
+            "content_type":"text",
+            "title":i18n.__("menu.summary"),
+            "payload":"YYY"
+          },{
+            "content_type":"text",
+            "title":i18n.__("menu.extractor"),
+            "payload":"TWO"
+          }
+        ]
+      }
+      action = null;
+      callSendAPI(sender_psid, response, action);
+    } else if (payload === 'IM')
+    {
+     response = {
+      "text": i18n.__("menu.welcome", {fName: first_name}), 
+      "quick_replies":[
+        {
+          "type":"text",
+          "title":i18n.__("menu.image_to_text"),
+          "payload":"IM"
+        },{
+          "content_type":"text",
+          "title":i18n.__("menu.text_to_audio"),
+          "payload":"THREE"
+        },{
+          "content_type":"text",
+          "title":i18n.__("menu.summary"),
+          "payload":"YYY"
+        },{
+          "content_type":"text",
+          "title":i18n.__("menu.extractor"),
+          "payload":"TWO"
+        }
+      ]
+    }
+      action = null;
+      callSendAPI(sender_psid, response, action);
+    }
+  }
+
+
+
   function handleMessage(sender_psid, webhook_event) {
     let response;
     let received_message = webhook_event.message
@@ -174,13 +421,35 @@ app.get('/webhook', (req, res) => {
       // will be added to the body of our request to the Send API
   var text = received_message.text.trim().toLowerCase();
    if  (text.includes("hi")) {
+    response = { 
+      "attachment":{
+        "type":"template",
+        "payload":{
+          "template_type":"button",
+          "text":"Welcome  ",
+          "buttons":[
+            {
+              "type":"postback",
+              "payload":"TRANSLATE",
+              "title":"Image to Code"
+            },
+            {
+              "type":"postback",
+              "payload":"UPLOAD",
+              "title":"Upload a Webpage"
+            },
+            {
+              "type":"postback",
+              "payload":"LINK",
+              "title":"View My Link"
+            }
+          ]
+        }
+      }
+    }
+ }
+  else if  (text.includes("imkljlkdfs")) {
     myD();
-
-    var text2 = received_message.text.trim().toLowerCase();
-    response = {"text": `Hi there, please use the menu or say "Start Over".`}
-  }
-  else if  (text.includes("pi")) {
-    myP();
     response = {"text": `Hi there, please use the menu or say "Start Over".`}
   }
    else {
@@ -193,10 +462,11 @@ app.get('/webhook', (req, res) => {
       // Get the URL of the message attachment
     //  let attachment_url = received_message.attachments[0].payload.url;
     // global.h
+    /*
     att = webhook_event.message.attachments[0].payload.url;
    // console.log(att);
   // convertImage(att);
-  filePath = 'sample.jpg';
+  filePath = 'sample.pdf';
 file = fs.createWriteStream(filePath);
 var request = https.get(att, async function(response) {
     response.pipe(file);
@@ -205,18 +475,23 @@ var request = https.get(att, async function(response) {
     })
     console.log('1');
 });
-
+*/
 
 // request = get(att, function(response) {
 //     response.pipe(file);
 //     });
 // console.log(file);
 
-    response = {"text": "Sorry, we don't handle attachment at this moment. Please say start over for the main menu."}
-    } 
+  i18n.setLocale('ar_AR');
+    response = {
+     "text" : i18n.__("guidance")
+            };
     // Send the response message
-    callSendAPI(sender_psid, response);
+
   }
+  action = null;
+  callSendAPI(sender_psid, response, action);
+}
   
 //   function convertImage(path){
 //     image2base64(path) 
@@ -235,9 +510,49 @@ var request = https.get(att, async function(response) {
 
 
   async function myD() {
-    var data = fs.readFileSync('9.jpg');
+    var data = fs.readFileSync('5.jpg');
     const results = await textractScan(data);
-    console.log(results);
+    let path = 'ttt.txt';
+    let s = "";
+    let t = 0;
+    for (i = 0 ; i < results.Blocks.length ; ++i) {
+      if (results.Blocks[i].Text && results.Blocks[i].BlockType === 'WORD'){
+       s += results.Blocks[i].Text + " ";
+       ++t;
+       if (t % 10 == 0){
+        s += '\n';
+       }
+  }}
+  console.log(s);
+  fs.writeFile("final.txt", s, 'utf8', function (err) {
+    if (err) {
+        console.log("An error occured while writing JSON Object to File.");
+        return console.log(err);
+    }
+ 
+    console.log("Done!"); 
+});
+}
+
+async function myR() {
+  var data = fs.readFileSync('9.jpg');
+  const results = await rekognition(data);
+  console.log(results.length);
+  for (i = 0 ; i < results.length ; ++i) {
+  console.log(results[i].DetectedText);
+  }
+
+
+  fs.writeFile("reko.txt", results.DetectedText, 'utf8', function (err) {
+    if (err) {
+        console.log("An error occured while writing JSON Object to File.");
+        return console.log(err);
+    }
+ 
+    console.log("HTML file has been saved."); 
+});
+
+
 };
     
 async function myP() {
@@ -281,45 +596,47 @@ fs.writeFile("autocodeai-form.css", results.generated_webpage_css, 'utf8', funct
 
     //console.log(results);
 };
-
-  // Handles messaging_postbacks events
-  function handlePostback(sender_psid, received_postback) {
-    let response;
-    
-    // Get the payload for the postback
-    let payload = received_postback.payload;
-  
-
-    response = { "text": 'We sent something. Please check your email.' }
-  
-    // Send the message to acknowledge the postback
-    callSendAPI(sender_psid, response);
-  }
   
   
   // Sends response messages via the Send API
-  function callSendAPI(sender_psid, response) {
+  function callSendAPI(sender_psid, response, action) {
     // Construct the message body
-    let request_body = {
+    var request_body;
+    if (!action){
+      request_body = {
       "recipient": {
-        "id": sender_psid
+      "id": sender_psid
       },
+      "messaging_type": "RESPONSE",
       "message": response
-    }
+    }}
+    else {
+      request_body = {
+      "recipient": {
+      "id": sender_psid
+      },
+      "sender_action":"typing_on"
+      }}
+
+    
     // Send the HTTP request to the Messenger Platform
-    request({
+    Request({
       "uri": "https://graph.facebook.com/v6.0/me/messages",
       "qs": { "access_token": process.env.PAGE_ACCESS_TOKEN },
       "method": "POST",
       "json": request_body
     }, (err, res, body) => {
       if (!err) {
-        console.log('message sent!')
+        console.log('message sent!');
+
       } else {
         console.error("Unable to send message:" + err);
       }
     }); 
   }
+
+
+
 
 
 
