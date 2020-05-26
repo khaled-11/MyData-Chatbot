@@ -269,48 +269,42 @@ console.log(e);
   let current_locale;
   let general_state;
 
-  // Check if the user is already in database
-  const check = await exists(sender_psid);
-  if (check === true)
-  {
-    const data = await getData(sender_psid);
-    console.log(data.Item.first_name.S);
-    first_name = data.Item.first_name.S;
-  } else {
-    const t = await requestData(sender_psid);
-    console.log(t);
-    const m = await putData(t);
-    console.log(m);
-    const s = await getData(sender_psid);
-    console.log(data.Item.first_name.S);
-    first_name = data.Item.first_name.S;
-  }
 
-    if (webhook_event.postback){
+  if (webhook_event.postback){
     payload = webhook_event.postback.payload;
     } else {
       payload = webhook_event.message.quick_reply.payload;
     }
 
 
-    // This to check, using a local array, if this is the first visit for the user.
-    // If True, will get the data for every other step after Get_Started.
-    //   if (users.includes(sender_psid)){
-    //     data = await ret(sender_psid);
-    //     console.log(data);
-    //     first_name = await data.Item.first_name.S;
-    //     current_locale = await data.Item.Locale.S;
-    //     general_state = await data.Item.general_state.S;
-    // } else {
-    //   // Add PSID to the local array, and should go after to Get_Started
-    //   users[users.length] = sender_psid;
+  // Check if the user is already in the database.
+  // Both cases will end up by reading the data from DynamoDB.
 
-    // }
-        // Adding the user data into DynamoDB table.
-        // Intializing tracking fields for the process.
-      // first_name = await data.Item.first_name.S;
-      // current_locale = await data.Item.Locale.S;
-      // general_state = await data.Item.general_state.S;
+  const check = await exists(sender_psid);
+
+  // If exists, request the data and avoid writing new Data.
+  // Incase the user deleted the conversation by mistake.
+
+  if (check === true)
+  {
+    const data = await getData(sender_psid);
+    first_name = data.Item.first_name.S;
+    current_locale = data.Item.Locale.S;
+    general_state = data.Item.general_state.S;
+
+  // If this is the first visit, request personal Data from Facebook.
+  // Then add the data to the DynamoDB and intialize user trackers.
+  
+  } else {
+    const t = await requestData(sender_psid);
+    console.log(t);
+    const m = await putData(t);
+    console.log(m);
+    const data = await getData(sender_psid);
+    first_name = data.Item.first_name.S;
+    current_locale = data.Item.Locale.S;
+    general_state = data.Item.general_state.S;
+  }
 
 
     ///////////////////////////////////////////////////
@@ -318,17 +312,9 @@ console.log(e);
     ///   If this is the first entry for the user.  ///
     ///////////////////////////////////////////////////
     if (payload === 'GET_STARTED') {
-
-    /////////////// Geeting User Info /////////////////
-   //   console.log(first_name + "fdfd")
-    // Variables sed only in get_started response.
-
-          // Sending Welcome Message and Main Menu in current Locale.
-          //console.log (current_locale);
-          //i18n.setLocale(current_locale);
           action = null;
           response = {
-            "text": i18n.__("menu.welcome", {fName: "fsd"}), 
+            "text": i18n.__("menu.welcome", {fName: first_name}), 
             "quick_replies":[
               {
                 "content_type":"text",
