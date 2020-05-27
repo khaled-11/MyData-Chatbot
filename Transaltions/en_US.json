@@ -5,5 +5,8 @@
 		"text_to_audio": "Text to Audio",
 		"summary": "Provide Summary",
 		"extractor": "Data Extractor"
+	},
+	"attachment": {
+		"default": "attachment.default"
 	}
 }
