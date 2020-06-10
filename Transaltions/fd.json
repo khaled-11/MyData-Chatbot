@@ -10,6 +10,34 @@ curl -X POST -H "Content-Type: application/json" -d "greeting":[{
 
 
     curl -X POST -H "Content-Type: application/json" -d '{
-            "greeting":[{"locale":"default","text":"Welcome {{user_first_name}}!! I am your Smart Helper from Talk to Me!! We are so Excited to show you our new Amazing Features. We are here to Help and Save your Time!!"},{"locale":"ar_AR","text":"أهلا بك {{user_first_name}}, انا مساعدك الذكي من Talk to Me. نحن متحمسين لنريك خدماتنا الجديده والمميزه. نحن هنا لمساعدتك وتوفير وقتك!"},{"locale":"zh_CN","text":"hkjhkjhkhyuiyiumn"}]
+            "greeting":[{"locale":"default","text":"Welcome {{user_first_name}}!! I am your Smart Helper from Talk to Me!! We are so Excited to show you our new Amazing Features. We are here to Help and Save your Time!!"},{"locale":"ar_AR","text":"أهلا بك {{user_first_name}}, انا مساعدك الذكي من Talk to Me. نحن متحمسين لنريك خدماتنا الجديده والمميزه. نحن هنا لمساعدتك وتوفير وقتك!"}]
         }' "https://graph.facebook.com/v2.6/me/messenger_profile?access_token=EAADXL3rUZAdsBAPnNERr9vpJP359ZC4rZAtqrBkzUYw2AO7Ttjl55ybolbC7FJLzyiwQj4II9wE6I1U0P3LtQD76LbohPZCZBsLeHOReqPyt1junk4m3WIZB2hLsZBrMBSwwrzMHKnjxOOG6WaxQCd93I6dlAnmwOLXlZB86C8mWuwZDZD"
      
+        curl -X POST -H "Content-Type: application/json" -d '{
+            "get_started":{ "payload":"GET_STARTED" }
+         }' "https://graph.facebook.com/v2.6/me/messenger_profile?access_token=EAAKgBEWGpmUBAKHjHk8DbZCNpOq9CkTSkfUnFILAwogaH2cPxOMo9RxbG1JxZCZAt3NvT6ZBAgSVbsZApQExGLcLODA5kCZAZC5d8PAZBJXl2gNs5ZAsfRbvrXB8r95iaTZAy51WZAa81yT730W6IEWmWsGiQTMIb3qceSn50zW9qYEWgZDZD"
+
+        curl -X POST -H "Content-Type: application/json" -d '{
+            "name": "Smart Bot",
+            "profile_picture_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Wikipedia_Monument_in_S%C5%82ubice_-_detail.JPG/1280px-Wikipedia_Monument_in_S%C5%82ubice_-_detail.JPG",
+        }' "https://graph.facebook.com/me/personas?access_token=EAAKgBEWGpmUBAKHjHk8DbZCNpOq9CkTSkfUnFILAwogaH2cPxOMo9RxbG1JxZCZAt3NvT6ZBAgSVbsZApQExGLcLODA5kCZAZC5d8PAZBJXl2gNs5ZAsfRbvrXB8r95iaTZAy51WZAa81yT730W6IEWmWsGiQTMIb3qceSn50zW9qYEWgZDZD"
+
+        //"id":"252743462474093"
+        //"id":"2789366834683303"
+
+        curl -X POST -H "Content-Type: application/json" -d '{
+            "recipient":{
+              "id":"4476484539044126"
+             },
+            "sender_action":"typing_on",
+            "persona_id": "2789366834683303"
+           }' "https://graph.facebook.com/me/messages?access_token=EAAKgBEWGpmUBAKHjHk8DbZCNpOq9CkTSkfUnFILAwogaH2cPxOMo9RxbG1JxZCZAt3NvT6ZBAgSVbsZApQExGLcLODA5kCZAZC5d8PAZBJXl2gNs5ZAsfRbvrXB8r95iaTZAy51WZAa81yT730W6IEWmWsGiQTMIb3qceSn50zW9qYEWgZDZD"
+
+
+        curl -X POST -H "Content-Type: application/json" -d '{
+            "name": "Data Extractor",
+            "profile_picture_url": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Wikipe-tan_avatar.png",
+        }' "https://graph.facebook.com/me/personas?access_token=EAACszGCxsIYBAMZAqP5EDij6n1EE9D2mC8tHF1se71nVtlvTKUVhWCldYZBr9Nw7kXR9elUpWAKZBfuEjbCDQF6A9HUZAfL7amQM3lGHZAEcdF9McxuW57nyROi81z2wL0tjcZAzmtPTULO1eikR36h4Tc6ZCsWR7sEcrBWSdu27AZDZD"
+        
+        //"id":"676272292951754"
+        //"id":"697258657727576"
